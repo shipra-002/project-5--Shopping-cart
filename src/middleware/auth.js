@@ -2,38 +2,70 @@ const jwt = require("jsonwebtoken");
 const UserModel = require("../models/userModel");
 
 
-const authentication = async (req, res, next) => {
+//Authentication................................................................
+
+const authentication = function (req, res, next) {
     try {
-        let token = req.headers["x-api-key"];
-        if (!token){
-            return res.status(401).send({ status: false, message: "token is required" })
+        const token = req.headers["authorization"]
+        if (!token) {
+            return res.status(400).send({ status: false, message: "token must be present" });
         }
-        let decodedToken = jwt.verify(token, 'projectfiveshoppingkart')
-        if (!decodedToken) return res.status(401).send({ status: false, message: 'token is not valid' })
-        // console.log(decodedToken.exp)
-        // console.log("now", Math.floor(Date.now() / 1000))
-    } catch (error) {
-        return res.status(500).send({ status: false, message: error.message })
+        const bearer=token.split(' ')
+        const bearerToken=bearer[1]
+        const decodedToken = jwt.verify(bearerToken, "projectfiveshoppingkart");
+
+        if (!decodedToken) {
+            return res.status(400).send({ status: false, message: "token is invalid" });
+        }
+        //req.decodedToken=decodedToken
+        next();
     }
-    next()
+    catch (err) {
+        console.log(err)
+        return res.status(500).send({ msg: err.message })
+    }
+
 }
 
-const authorisation = async (req, res, next) => {
+
+//Authorization.....................................................................
+
+let authorisation = async function (req, res, next) {
+
     try {
-        let token = req.headers["x-api-key"];
-        let decodedToken = jwt.verify(token, "projectfiveshoppingkart");
-        let userLoggingIn = req.params.userId
-        let userLoggedIn = decodedToken._id
-        let value = await UserModel.findById(userLoggingIn)
-        if (!value) return res.status(404).send({status:false, message: "user not found"})
-        if (value.userId != userLoggedIn) return res.status(403).send({ status: false, message: "You are not allowed to modify requested  data" })
+        let token = req.headers["authorization"]
+        if (!token) { return res.status(400).send({ status: false, message: "token must be present" }) }
+
+        const bearer=token.split(' ')
+        const bearerToken=bearer[1]
+        const decodedToken = jwt.verify(bearerToken, "projectfiveshoppingkart");
+
+        if (!decodedToken) {
+            return res.status(400).send({ status: false, message: "token is invalid" });
+        }
+
+        let decodedUserId = decodedToken.userId
+        let userIdParams = req.params.userId
+
+        let userDetailsId = await UserModel.findById({ _id: userIdParams })
+        if (!userDetailsId) {
+            return res.status(401).send({ status: false, msg: "no data found with this Id" });
+        }
+
+        let checkUserId = userDetailsId._id
+
+        if (decodedUserId != checkUserId) { return res.status(403).send({ status: false, message: "You are not an authorized person to make these changes" }) }
+        next()
     }
     catch (error) {
-        return res.status(500).send({status: false, message: error.message })
+        console.log(error)
+        return res.status(500).send({ msg: error.message })
     }
-    next()
 }
 
 
 module.exports.authentication = authentication
 module.exports.authorisation = authorisation
+
+
+
