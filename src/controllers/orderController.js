@@ -68,29 +68,41 @@ const validStatus = function (value) {
         
 //     }
 // }
-
-const createOrder = async function (req,res){
+const createOrder = async (req, res) => {
     try{
-        let userId = req.params.userId
-        let data = req.body
-        let {items}= data
-        if (!isValidObjectId(userId)) {
-            return res.status(400).send({ status: false, msg: "userId is invalid" })
+        const {userId} = req.params
+        if(!isValidObjectId(userId)){
+            return res.status(400).send({status: false, message: "not a valid userID"})
         }
-        let totalQuantity = 0;
-        for(let i = 0 ; i<items.length;i++){
-            totalQuantity +=items[i].quantity
-        }
-        data.userId = userId
-        data.totalQuantity = totalQuantity
-        const orderRes = await orderModel.create(data)
-        return res.status(201).send({ status:true, msg: "that is your order",data:orderRes })
+        const isUserExist = await UserModel.findOne({_id: userId})
+      
 
-    }
-    catch (err) {
-        return res.status(500).send({ status: false, msg: err.message })
+        if(!isUserExist){
+            return res.status(404).send({status: false, message: "user does not exist"})
+        }
+        const isCartExist = await cartModel.findOne({userId:userId});
+        if(!isCartExist){
+          return res.status(404).send({status: false, message: "user does not have a cart"})
+      }
+
+        const data = req.body
+        if (!isValidRequestBody(data)){
+            return res.status(404).send({status: false, message: "enter data"})
+        }
+        const {items, totalPrice, totalItems} = data
+        let todtalQuantity = 0
+        for(let i = 0; i < items.length; i++){
+          todtalQuantity = todtalQuantity + items[i].quantity
+        }
+        data.totalQuantity = todtalQuantity
+        data.userId = userId
+        const order = await orderModel.create(data)
+        return res.status(201).send({status: true,msg:"success", data: order})
+    }catch(error){
+        return res.status(500).send({status: false, message: error.message})
     }
 }
+
 
 
 const updateOrder=async function (req,res){

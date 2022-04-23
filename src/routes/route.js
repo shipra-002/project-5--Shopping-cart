@@ -10,7 +10,7 @@ const orderController=require("../controllers/orderController")
 //user
 router.post("/register" , UserController.createUser)
 router.post("/login",UserController.loginUser)
-router.get( "/user/:userId/profile",middleware.authentication,UserController.getUser)
+router.get( "/user/:userId/profile",middleware.authentication,middleware.authorisation,UserController.getUser)
 router.put("/user/:userId/profile",middleware.authentication,middleware.authorisation,UserController.updateUser)
 //product
 

@@ -242,7 +242,7 @@ const loginUser = async function(req, res){
         );
         res.setHeader("authorization", token)
         res
-        .status(201)
+        .status(200)
         .send({status:true, message: 'user Login SuccessFull', data:{ userId:isUserExist._id, token }}),{_id:1}
     
     }catch(err){
